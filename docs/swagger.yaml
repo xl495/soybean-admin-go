@@ -1,0 +1,13 @@
+basePath: /api
+info:
+  contact:
+    email: 52553624@qq.com
+    name: hxl
+  description: This is an API for soybean-admin-go Application
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: soybean-admin-go Admin App
+  version: "1.0"
+paths: {}
+swagger: "2.0"
