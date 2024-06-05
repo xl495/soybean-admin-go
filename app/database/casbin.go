@@ -22,7 +22,10 @@ func Casbin() *casbin.Enforcer {
 
 	// Add policy - One-time run
 	if hasPolicy, _ := e.HasPolicy("R_SUPER", "/api/*", "(GET)|(POST)|(PUT)|(DELETE)"); !hasPolicy {
-		e.AddPolicy("R_SUPER", "/api/*", "(GET)|(POST)|(PUT)|(DELETE)")
+		_, err := e.AddPolicy("R_SUPER", "/api/*", "(GET)|(POST)|(PUT)|(DELETE)")
+		if err != nil {
+			return nil
+		}
 	}
 
 	err = e.LoadPolicy()

@@ -72,7 +72,12 @@ func initializeData(db *gorm.DB) {
 		if err != nil {
 			log.Error("打开文件失败 ", err)
 		}
-		defer file.Close()
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				log.Error("关闭文件失败 ", err)
+			}
+		}(file)
 
 		// 读取文件内容
 		byteValue, err := io.ReadAll(file)

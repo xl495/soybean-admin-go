@@ -30,7 +30,7 @@ type User struct {
 }
 
 // BeforeSave 自定义方法，用于在保存记录前将 UserRoles 转换为 JSON 字符串
-func (u *User) BeforeSave(tx *gorm.DB) (err error) {
+func (u *User) BeforeSave(_ *gorm.DB) (err error) {
 	if len(u.UserRoles) > 0 {
 		rolesJson, err := json.Marshal(u.UserRoles)
 		if err != nil {
@@ -42,7 +42,7 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 }
 
 // AfterFind 自定义方法，用于在查找记录后将 JSON 字符串转换为 UserRoles
-func (u *User) AfterFind(tx *gorm.DB) (err error) {
+func (u *User) AfterFind(_ *gorm.DB) (err error) {
 	if u.Roles != "" {
 		err = json.Unmarshal([]byte(u.Roles), &u.UserRoles)
 		if err != nil {

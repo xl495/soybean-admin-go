@@ -6,11 +6,6 @@ import (
 	"time"
 )
 
-var Jwt = &jwtUtils{}
-
-type jwtUtils struct {
-}
-
 func GenerateToken(userid uint, userName string) (string, error) {
 
 	// 生成token
