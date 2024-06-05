@@ -44,12 +44,14 @@ func Initalize(router *fiber.App) {
 
 	user.Post("create", controller.CreateUser)
 
+	// 系统管理
 	system := api.Group("systemManage")
 	system.Use(middleware.JwtMiddleware())
 	system.Get("getUserList", middleware.AuthorizeCasbin(enforcer), controller.GetUserList)
 	system.Get("getRoleList", middleware.AuthorizeCasbin(enforcer), controller.GetRoleList)
 	system.Get("getAllRoles", middleware.AuthorizeCasbin(enforcer), controller.GetAllRoles)
 	system.Get("/getMenuList/v2", middleware.AuthorizeCasbin(enforcer), controller.GetMenuList)
+	system.Get("/getMenuTree", middleware.AuthorizeCasbin(enforcer), controller.GetMenuTreeList)
 	system.Get("getAllPages", middleware.AuthorizeCasbin(enforcer), controller.GetAllPages)
 	system.Post("role", middleware.AuthorizeCasbin(enforcer), controller.AddRole)
 	system.Put("role/:id", middleware.AuthorizeCasbin(enforcer), controller.EditRole)

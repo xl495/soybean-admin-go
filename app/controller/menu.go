@@ -11,6 +11,12 @@ type MenuTreeResp struct {
 	model.Menu
 	Children []MenuTreeResp `json:"children"`
 }
+type MenuTreeListResp struct {
+	Pid      uint               `json:"pid"`
+	Label    string             `json:"label"`
+	ID       uint               `json:"id"`
+	Children []MenuTreeListResp `json:"children"`
+}
 
 func SetResourceMenuTree(menuList []model.Menu) []MenuTreeResp {
 	var menuTreeList []MenuTreeResp
@@ -39,6 +45,28 @@ func SetResourceMenuTree(menuList []model.Menu) []MenuTreeResp {
 	return menuTreeList
 }
 
+func SetResourceMenuTreeList(menuList []model.Menu) []MenuTreeListResp {
+	var menuTreeList []MenuTreeListResp
+	for _, menu := range menuList {
+		menuTree := MenuTreeListResp{
+			Pid:   menu.ParentId,
+			Label: menu.MenuName,
+			ID:    menu.ID,
+		}
+		if menu.ParentId == 0 {
+			menuTreeList = append(menuTreeList, menuTree)
+			continue
+		} else {
+			for index, item := range menuTreeList {
+				if item.ID == menu.ParentId {
+					menuTreeList[index].Children = append(menuTreeList[index].Children, menuTree)
+				}
+			}
+		}
+	}
+	return menuTreeList
+}
+
 func GetMenuList(ctx *fiber.Ctx) error {
 	current := ctx.QueryInt("current", 1)
 	size := 500
@@ -58,7 +86,19 @@ func GetMenuList(ctx *fiber.Ctx) error {
 	}, ctx)
 }
 
-// 获取所有菜单 name
+func GetMenuTreeList(ctx *fiber.Ctx) error {
+	result, err := services.GetMenuTreeList(1, 500)
+
+	if err != nil {
+		return response.FailWithMessage(err.Error(), ctx)
+	}
+
+	resultTree := SetResourceMenuTreeList(result.Records.([]model.Menu))
+
+	return response.OkWithData(resultTree, ctx)
+}
+
+// GetAllPages 获取所有菜单 name
 func GetAllPages(ctx *fiber.Ctx) error {
 	current := ctx.QueryInt("current", 1)
 	size := 500
