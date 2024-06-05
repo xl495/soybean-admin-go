@@ -9,6 +9,17 @@ import (
 	"soybean-admin-go/app/utils/response"
 )
 
+func GetUserInfo(userId float64) (model.User, error) {
+	var user model.User
+	findUser := database.DB.Where("id = ?", userId).First(&user)
+
+	if findUser.Error != nil {
+		return model.User{}, errors.New("用户不存在")
+	}
+
+	return user, nil
+}
+
 func CreateUser(username string, password string) (fiber.Map, error) {
 	pws, err := utils.PasswordHash(password)
 
@@ -25,7 +36,7 @@ func CreateUser(username string, password string) (fiber.Map, error) {
 	}
 
 	newUser := &model.User{
-		Username: username,
+		UserName: username,
 		Password: pws,
 	}
 
@@ -35,7 +46,7 @@ func CreateUser(username string, password string) (fiber.Map, error) {
 	responseData := make(fiber.Map)
 
 	responseData["ID"] = newUser.ID
-	responseData["username"] = newUser.Username
+	responseData["username"] = newUser.UserName
 
 	if dbUser.Error != nil {
 		return nil, errors.New("创建用户失败")
@@ -44,14 +55,43 @@ func CreateUser(username string, password string) (fiber.Map, error) {
 	return responseData, nil
 }
 
-func GetUserList(username string, current int, size int) (response.PageResult, error) {
+func GetUserList(userName, userGender, UserPhone, UserEmail, Status string, current int, size int) (response.PageResult, error) {
 	var users []model.User
 	var total int64
 
-	if username != "" {
-		database.DB.Where("username like ?", "%"+username+"%").Offset((current - 1) * size).Limit(size).Find(&users)
-	} else {
-		database.DB.Offset((current - 1) * size).Limit(size).Find(&users)
+	// 开始构造查询
+	query := database.DB.Preload("UserRoles")
+
+	// 如果 userName 不为空，则添加用户名过滤条件
+	if userName != "" {
+		query = query.Where("user_name LIKE ?", "%"+userName+"%")
+	}
+	// 如果 Status 不为空，则添加用户名过滤条件
+	if Status != "" {
+		query = query.Where("status = ?", Status)
+	}
+	// 如果 userGender 不为空，则添加用户名过滤条件
+	if userGender != "" {
+		query = query.Where("user_gender = ?", userGender)
+	}
+	// 如果 UserPhone 不为空，则添加用户名过滤条件
+	if UserPhone != "" {
+		query = query.Where("user_phone LIKE ?", "%"+UserPhone+"%")
+	}
+	// 如果 UserEmail 不为空，则添加用户名过滤条件
+	if UserEmail != "" {
+		query = query.Where("user_email LIKE ?", "%"+UserEmail+"%")
+	}
+
+	// 使用分页和获取用户列表
+	query.Offset((current - 1) * size).Limit(size).Find(&users)
+
+	// 计算总数
+	query.Model(&model.User{}).Count(&total)
+
+	// 确保返回的 users 不是 nil
+	if users == nil {
+		users = []model.User{}
 	}
 
 	return response.PageResult{
@@ -60,5 +100,4 @@ func GetUserList(username string, current int, size int) (response.PageResult, e
 		Current: current,
 		Size:    size,
 	}, nil
-
 }

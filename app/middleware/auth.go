@@ -26,9 +26,13 @@ func JwtMiddleware() fiber.Handler {
 
 		token := bearerToken[1]
 
-		parseToken, _ := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-			return os.Getenv("JWT_SECRET"), nil
+		parseToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv("JWT_SECRET")), nil
 		})
+
+		if err != nil {
+			return response.FailWithUnauthorized(nil, "Token 解析失败", c)
+		}
 
 		if parseToken != nil {
 			if parseToken.Claims == nil || parseToken.Claims.(jwt.MapClaims)["userId"] == nil {
@@ -44,6 +48,9 @@ func JwtMiddleware() fiber.Handler {
 			claims := parseToken.Claims.(jwt.MapClaims)
 
 			c.Locals("user", claims)
+
+			c.Locals("userId", claims["userId"])
+
 		} else {
 			return response.FailWithUnauthorized(nil, "未登录", c)
 		}

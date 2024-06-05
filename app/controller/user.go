@@ -10,30 +10,49 @@ type UserReq struct {
 	// 用户名
 	// required: true
 	// example: admin
-	Username string `json:"username"`
+	UserName string `json:"userName"`
 	// 密码
 	// required: true
 	// example: 123456
 	Password string `json:"password"`
 }
 
+type GetUserResponse struct {
+	Buttons  []string `json:"buttons"`
+	Roles    []string `json:"roles"`
+	UserId   uint     `json:"userId"`
+	UserName string   `json:"userName"`
+}
+
 func GetUserInfo(ctx *fiber.Ctx) error {
-	return response.OkWithData(fiber.Map{
-		"userName": "Soybean",
-		"roles":    []string{"R_SUPER"},
-		"avatar":   "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif",
-		"userId":   0,
-		"buttons":  []string{"B_CODE1", "B_CODE2", "B_CODE3"},
-	}, ctx)
+	userId := ctx.Locals("userId").(float64)
+	var result GetUserResponse
+
+	findUser, err := services.GetUserInfo(userId)
+
+	if err != nil {
+		return response.FailWithMessage(err.Error(), ctx)
+	}
+
+	result.UserId = findUser.ID
+	result.UserName = findUser.UserName
+	result.Roles = findUser.UserRoles
+	result.Buttons = []string{}
+
+	return response.OkWithData(result, ctx)
 }
 
 func GetUserList(ctx *fiber.Ctx) error {
 	//  获取请求参数
 	current := ctx.QueryInt("current", 1)
 	size := ctx.QueryInt("size", 10)
-	username := ctx.Query("username", "")
+	userName := ctx.Query("userName", "")
+	userGender := ctx.Query("userGender", "")
+	UserPhone := ctx.Query("userPhone", "")
+	UserEmail := ctx.Query("userEmail", "")
+	Status := ctx.Query("status", "")
 	// 查询用户列表
-	result, err := services.GetUserList(username, current, size)
+	result, err := services.GetUserList(userName, userGender, UserPhone, UserEmail, Status, current, size)
 	if err != nil {
 		return response.FailWithMessage(err.Error(), ctx)
 	}
@@ -58,7 +77,7 @@ func CreateUser(ctx *fiber.Ctx) error {
 	}
 
 	// 创建用户
-	result, err := services.CreateUser(userReq.Username, userReq.Password)
+	result, err := services.CreateUser(userReq.UserName, userReq.Password)
 
 	if err != nil {
 		return response.FailWithMessage(err.Error(), ctx)

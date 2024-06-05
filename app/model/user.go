@@ -1,21 +1,53 @@
 package model
 
+import (
+	"encoding/json"
+	"gorm.io/gorm"
+)
+
 // User 用户模型
 type User struct {
 	GormBase
-	Username string `json:"username"`
+	UserName string `json:"userName"`
 	// 昵称
-	Nickname string `json:"nickname"`
+	NickName string `json:"nickName" gorm:"default: null;"`
 	// 性别
-	Gender string `json:"gender"`
+	UserGender string `json:"userGender" gorm:"default: 1;"`
 	// 手机号
-	Phone string `json:"phone;unique"`
+	UserPhone string `json:"userPhone" gorm:"unique;default: null;"`
 	// 邮箱
-	Email string `json:"email;unique"`
+	UserEmail string `json:"userEmail" gorm:"unique;default: null;"`
 	// 密码
 	Password string `json:"password"`
 	// 头像
-	Avatar string `json:"avatar"`
+	Avatar string `json:"avatar" gorm:"default: null;"`
 	// 角色
-	Role string `json:"role"`
+	UserRoles []string `json:"userRoles" gorm:"-"`
+	// 用于存储 UserRoles 的 JSON 字符串
+	Roles string `json:"-"`
+	//	状态
+	Status string `json:"status" gorm:"default:1;"`
+}
+
+// BeforeSave 自定义方法，用于在保存记录前将 UserRoles 转换为 JSON 字符串
+func (u *User) BeforeSave(tx *gorm.DB) (err error) {
+	if len(u.UserRoles) > 0 {
+		rolesJson, err := json.Marshal(u.UserRoles)
+		if err != nil {
+			return err
+		}
+		u.Roles = string(rolesJson)
+	}
+	return nil
+}
+
+// AfterFind 自定义方法，用于在查找记录后将 JSON 字符串转换为 UserRoles
+func (u *User) AfterFind(tx *gorm.DB) (err error) {
+	if u.Roles != "" {
+		err = json.Unmarshal([]byte(u.Roles), &u.UserRoles)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

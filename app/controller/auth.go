@@ -2,7 +2,6 @@ package controller
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"soybean-admin-go/app/services"
 	"soybean-admin-go/app/utils/response"
 )
@@ -11,7 +10,7 @@ type LogReq struct {
 	// 用户名
 	// required: true
 	// example: admin
-	Username string `json:"username"`
+	UserName string `json:"userName"`
 	// 密码
 	// required: true
 	// example: 123456
@@ -32,9 +31,7 @@ func Login(ctx *fiber.Ctx) error {
 	}
 
 	// 登录
-	result, err := services.Login(logReq.Username, logReq.Password)
-
-	log.Info("result: ", result)
+	result, err := services.Login(logReq.UserName, logReq.Password)
 
 	if err != nil {
 		return response.FailWithMessage(err.Error(), ctx)

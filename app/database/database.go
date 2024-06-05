@@ -1,11 +1,13 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2/log"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"io"
 	stsyem "log"
 	"os"
 	"soybean-admin-go/app/model"
@@ -47,7 +49,7 @@ func ConnectDB() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = DB.AutoMigrate(&model.User{})
+	err = DB.AutoMigrate(&model.User{}, &model.UserRole{}, &model.Menu{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,14 +60,46 @@ func ConnectDB() error {
 
 func initializeData(db *gorm.DB) {
 	var userCount int64
-	db.Model(&model.User{}).Count(&userCount)
+	var userRoleCount int64
+	var menuCount int64
+	db.Preload("UserRoles").Model(&model.User{}).Count(&userCount)
+	db.Model(&model.UserRole{}).Count(&userRoleCount)
+	db.Model(&model.Menu{}).Count(&menuCount)
+
+	if menuCount == 0 {
+		//	加载 json 数据
+		file, err := os.Open("app/database/menu_base.json")
+		if err != nil {
+			log.Error("打开文件失败 ", err)
+		}
+		defer file.Close()
+
+		// 读取文件内容
+		byteValue, err := io.ReadAll(file)
+		if err != nil {
+			log.Fatalf("Failed to read JSON file: %s", err)
+		}
+
+		var menus []model.Menu
+		err = json.Unmarshal(byteValue, &menus)
+		if err != nil {
+			log.Fatalf("Failed to unmarshal JSON: %s", err)
+		}
+
+		addMenu := db.Create(&menus)
+		if addMenu.Error != nil {
+			log.Error("创建默认菜单失败 ", addMenu.Error)
+		}
+		log.Info("初始化数据成功, 创建默认菜单成功", menus)
+	}
 
 	if userCount == 0 {
 		pws, err := utils.PasswordHash("123456")
 
 		newUser := &model.User{
-			Username: "Soybean",
-			Password: pws,
+			UserName:  "Soybean",
+			Password:  pws,
+			UserRoles: []string{"R_SUPER"},
 		}
 
 		dbUser := db.Create(newUser)
@@ -78,6 +112,7 @@ func initializeData(db *gorm.DB) {
 			log.Fatal(err)
 		}
 
-		log.Info("初始化数据成功, 创建默认用户成功, 用户名: %s", newUser.Username)
+		log.Info("初始化数据成功, 创建默认用户成功, 用户名: ", newUser.UserName)
 	}
+
 }

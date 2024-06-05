@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"soybean-admin-go/app/controller"
+	"soybean-admin-go/app/database"
 	"soybean-admin-go/app/middleware"
 )
 
@@ -22,6 +23,9 @@ func Initalize(router *fiber.App) {
 		FilePath: "./docs/swagger.json",
 		Path:     "docs",
 	}))
+
+	// Init Casbin for Role-based Authorization Control (RBAC)
+	enforcer := database.Casbin()
 
 	api.Use(middleware.Json)
 
@@ -41,10 +45,14 @@ func Initalize(router *fiber.App) {
 	user.Post("create", controller.CreateUser)
 
 	system := api.Group("systemManage")
-
 	system.Use(middleware.JwtMiddleware())
-
-	system.Get("getUserList", controller.GetUserList)
+	system.Get("getUserList", middleware.AuthorizeCasbin(enforcer), controller.GetUserList)
+	system.Get("getRoleList", middleware.AuthorizeCasbin(enforcer), controller.GetRoleList)
+	system.Get("getAllRoles", middleware.AuthorizeCasbin(enforcer), controller.GetAllRoles)
+	system.Get("/getMenuList/v2", middleware.AuthorizeCasbin(enforcer), controller.GetMenuList)
+	system.Get("getAllPages", middleware.AuthorizeCasbin(enforcer), controller.GetAllPages)
+	system.Post("role", middleware.AuthorizeCasbin(enforcer), controller.AddRole)
+	system.Put("role/:id", middleware.AuthorizeCasbin(enforcer), controller.EditRole)
 
 	//api.Post("/user", controller.CreateUser)
 	//api.Get("/users", middleware.JwtMiddleware(), controller.GetUser)
