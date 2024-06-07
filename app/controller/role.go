@@ -25,6 +25,10 @@ type AddRoleReq struct {
 	Status string `json:"status"`
 }
 
+type RemoveRoleReq struct {
+	Ids []int `json:"ids"`
+}
+
 func GetRoleList(ctx *fiber.Ctx) error {
 	current := ctx.QueryInt("current", 1)
 	size := ctx.QueryInt("size", 10)
@@ -59,7 +63,7 @@ func EditRole(ctx *fiber.Ctx) error {
 	if editRoleReq.RoleName == "" || editRoleReq.RoleCode == "" || editRoleReq.Status == "" {
 		return response.FailWithMessage("参数错误", ctx)
 	}
-	result, err := services.EditRole(editId, editRoleReq.RoleName, editRoleReq.RoleCode, editRoleReq.Status)
+	result, err := services.EditRole(editId, editRoleReq.RoleName, editRoleReq.RoleCode, editRoleReq.RoleDesc, editRoleReq.Status)
 	if err != nil {
 		return response.FailWithMessage(err.Error(), ctx)
 	}
@@ -74,9 +78,27 @@ func AddRole(ctx *fiber.Ctx) error {
 	if addRoleReq.RoleName == "" || addRoleReq.RoleCode == "" || addRoleReq.Status == "" {
 		return response.FailWithMessage("参数错误", ctx)
 	}
-	result, err := services.AddRole(addRoleReq.RoleName, addRoleReq.RoleCode, addRoleReq.Status)
+	result, err := services.AddRole(addRoleReq.RoleName, addRoleReq.RoleCode, addRoleReq.RoleDesc, addRoleReq.Status)
 	if err != nil {
 		return response.FailWithMessage(err.Error(), ctx)
 	}
 	return response.OkWithData(result, ctx)
+}
+
+func RemoveRoles(ctx *fiber.Ctx) error {
+	var removeRoleReq RemoveRoleReq
+	if err := ctx.BodyParser(&removeRoleReq); err != nil {
+		return response.FailWithMessage("参数解析错误", ctx)
+	}
+	if len(removeRoleReq.Ids) == 0 {
+		return response.FailWithMessage("参数错误", ctx)
+	}
+
+	err := services.RemoveRoles(removeRoleReq.Ids)
+
+	if err != nil {
+		return response.FailWithMessage(err.Error(), ctx)
+	}
+
+	return response.OkWithMessage("删除成功", ctx)
 }

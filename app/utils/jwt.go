@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func GenerateToken(userid uint, userName string) (string, error) {
+func GenerateToken(userid uint, userName string, userRole []string) (string, error) {
 
 	// 生成token
 	token := jwt.New(jwt.SigningMethodHS256)
@@ -14,6 +14,8 @@ func GenerateToken(userid uint, userName string) (string, error) {
 	claims := token.Claims.(jwt.MapClaims)
 	claims["userName"] = userName
 	claims["userId"] = userid
+	claims["userRole"] = userRole
+
 	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
 
 	t, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))

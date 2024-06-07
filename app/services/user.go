@@ -55,12 +55,62 @@ func CreateUser(username string, password string) (fiber.Map, error) {
 	return responseData, nil
 }
 
+func AddUser(userName, password, userPhone, userEmail string, userRoles []string) (model.User, error) {
+	var user model.User
+	user.UserName = userName
+	user.UserPhone = userPhone
+	user.UserEmail = userEmail
+	user.UserRoles = userRoles
+
+	pws, err := utils.PasswordHash(password)
+
+	if err != nil {
+		return user, errors.New("密码加密错误")
+	}
+
+	user.Password = pws
+	user.Status = "1"
+	if database.DB.Create(&user).Error != nil {
+		return user, errors.New("创建用户失败")
+	}
+	return user, nil
+}
+
+func EditUser(id int, userName, password, userPhone, userEmail string, userRoles []string) (model.User, error) {
+	var user model.User
+	user.UserName = userName
+	user.UserPhone = userPhone
+	user.UserEmail = userEmail
+	user.UserRoles = userRoles
+
+	pws, err := utils.PasswordHash(password)
+
+	if err != nil {
+		return user, errors.New("密码加密错误")
+	}
+
+	user.Password = pws
+
+	if database.DB.Model(&user).Where("id = ?", id).Updates(&user).Error != nil {
+		return user, errors.New("更新用户失败")
+	}
+	return user, nil
+}
+
+func RemoveUsers(ids []int) error {
+	query := database.DB.Delete(&model.User{}, ids)
+	if query.Error != nil {
+		return query.Error
+	}
+	return nil
+}
+
 func GetUserList(userName, userGender, UserPhone, UserEmail, Status string, current int, size int) (response.PageResult, error) {
 	var users []model.User
 	var total int64
 
 	// 开始构造查询
-	query := database.DB.Preload("UserRoles")
+	query := database.DB
 
 	// 如果 userName 不为空，则添加用户名过滤条件
 	if userName != "" {

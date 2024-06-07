@@ -1,48 +1,44 @@
 package middleware
 
 import (
-	"fmt"
 	"github.com/casbin/casbin/v2"
 	"github.com/gofiber/fiber/v2"
-	"soybean-admin-go/app/database"
-	"soybean-admin-go/app/model"
+	"github.com/golang-jwt/jwt"
 	"soybean-admin-go/app/utils/response"
 )
 
 func AuthorizeCasbin(e *casbin.Enforcer) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var user model.User
 
-		userId := c.Locals("userId").(float64)
+		user := c.Locals("user").(jwt.MapClaims)
 
-		// 查找当前用户
-
-		if userId == 0 {
-			return response.FailWithMessage("查找当前用户失败!", c)
+		if user["userId"].(float64) == 0 {
+			return response.FailWithMessage("未登录", c)
 		}
 
-		database.DB.Find(&user, userId)
+		roles := user["userRole"].([]interface{})
 
-		var role = user.UserRoles[0]
-
-		if role == "" {
+		if len(roles) == 0 {
 			return response.FailWithMessage("当前用户未设置角色!", c)
 		}
 
+		// 可能存在多个权限
 		err := e.LoadPolicy()
+
 		if err != nil {
 			return response.FailWithMessage("加载配置文件失败!", c)
 		}
 
-		accepted, err := e.Enforce(fmt.Sprint(role), c.OriginalURL(), c.Method()) // id - url - method || 1 - /api/admin/users - GET
-
-		if err != nil {
-			return response.FailWithMessage("授权失败!", c)
+		// 判断策略中是否存在
+		for _, v := range roles {
+			isSuccess, err := e.Enforce(v, c.OriginalURL(), c.Method())
+			if err != nil {
+				return response.FailWithMessage("鉴权失败!", c)
+			}
+			if isSuccess {
+				return c.Next()
+			}
 		}
-
-		if !accepted {
-			return response.FailWithMessage("未授权!", c)
-		}
-		return c.Next()
+		return response.FailWithMessage("未授权!", c)
 	}
 }

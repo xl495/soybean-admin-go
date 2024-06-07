@@ -10,6 +10,8 @@ import (
 type MenuTreeResp struct {
 	model.Menu
 	Children []MenuTreeResp `json:"children"`
+	Name     string         `json:"name"`
+	Path     string         `json:"path"`
 }
 type MenuTreeListResp struct {
 	Pid      uint               `json:"pid"`
@@ -23,6 +25,8 @@ func SetResourceMenuTree(menuList []model.Menu) []MenuTreeResp {
 	for _, menu := range menuList {
 		menuTree := MenuTreeResp{
 			Menu: menu,
+			Name: menu.MenuName,
+			Path: menu.RouteName,
 		}
 		if menu.ParentId == 0 {
 			if menuTree.Children == nil {

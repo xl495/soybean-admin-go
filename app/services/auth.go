@@ -27,7 +27,11 @@ func Login(userName string, password string) (fiber.Map, error) {
 		return nil, errors.New("密码错误")
 	}
 
-	token, err := utils.GenerateToken(existingUser.ID, existingUser.UserName)
+	if existingUser.Status != "1" {
+		return nil, errors.New("用户已被禁用")
+	}
+
+	token, err := utils.GenerateToken(existingUser.ID, existingUser.UserName, existingUser.UserRoles)
 
 	if err != nil {
 		return nil, errors.New("生成token失败")

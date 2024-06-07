@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"soybean-admin-go/app/model"
 	"soybean-admin-go/app/services"
 	"soybean-admin-go/app/utils/response"
 )
@@ -15,6 +16,10 @@ type UserReq struct {
 	// required: true
 	// example: 123456
 	Password string `json:"password"`
+}
+
+type AddUserReq struct {
+	model.User
 }
 
 type GetUserResponse struct {
@@ -84,4 +89,56 @@ func CreateUser(ctx *fiber.Ctx) error {
 	}
 
 	return response.OkWithData(result, ctx)
+}
+
+func AddUser(ctx *fiber.Ctx) error {
+	var userReq AddUserReq
+	if err := ctx.BodyParser(&userReq); err != nil {
+		return response.FailWithMessage("参数解析错误", ctx)
+	}
+	result, err := services.AddUser(userReq.UserName, "123456", userReq.UserPhone, userReq.UserEmail, userReq.UserRoles)
+	if err != nil {
+		return response.FailWithMessage(err.Error(), ctx)
+	}
+	return response.OkWithData(result, ctx)
+
+}
+
+func EditUser(ctx *fiber.Ctx) error {
+	editId, err := ctx.ParamsInt("id")
+	if err != nil {
+		return response.FailWithMessage("参数错误", ctx)
+	}
+	var editUserReq AddUserReq
+	if err := ctx.BodyParser(&editUserReq); err != nil {
+		return response.FailWithMessage("参数解析错误", ctx)
+	}
+	if editUserReq.UserName == "" || editUserReq.Password == "" {
+		return response.FailWithMessage("参数错误", ctx)
+	}
+	result, err := services.EditUser(editId, editUserReq.UserName, editUserReq.Password, editUserReq.UserPhone, editUserReq.UserEmail, editUserReq.UserRoles)
+	if err != nil {
+		return response.FailWithMessage(err.Error(), ctx)
+	}
+	return response.OkWithData(result, ctx)
+}
+
+func RemoveUsers(ctx *fiber.Ctx) error {
+	currentUserId := ctx.Locals("userId").(float64)
+	var ids []int
+	if err := ctx.BodyParser(&ids); err != nil {
+		return response.FailWithMessage("参数解析错误", ctx)
+	}
+	// 判断是否包含当前用户
+	for _, id := range ids {
+		if id == int(currentUserId) {
+			return response.FailWithMessage("不能删除当前用户", ctx)
+		}
+
+	}
+	err := services.RemoveUsers(ids)
+	if err != nil {
+		return response.FailWithMessage(err.Error(), ctx)
+	}
+	return response.OkWithDetailed(fiber.Map{"ids": ids}, "删除用户成功", ctx)
 }

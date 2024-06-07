@@ -62,6 +62,23 @@ func initializeData(db *gorm.DB) {
 	var userCount int64
 	var userRoleCount int64
 	var menuCount int64
+	roles := []model.UserRole{
+		{
+			RoleName: "超级管理员",
+			RoleCode: "R_SUPER",
+			RoleDesc: "",
+		},
+		{
+			RoleName: "管理员",
+			RoleCode: "R_ADMIN",
+			RoleDesc: "",
+		},
+		{
+			RoleName: "普通用户",
+			RoleCode: "R_USER",
+			RoleDesc: "",
+		},
+	}
 	db.Preload("UserRoles").Model(&model.User{}).Count(&userCount)
 	db.Model(&model.UserRole{}).Count(&userRoleCount)
 	db.Model(&model.Menu{}).Count(&menuCount)
@@ -101,23 +118,44 @@ func initializeData(db *gorm.DB) {
 	if userCount == 0 {
 		pws, err := utils.PasswordHash("123456")
 
-		newUser := &model.User{
-			UserName:  "Soybean",
-			Password:  pws,
-			UserRoles: []string{"R_SUPER"},
+		users := []model.User{
+			{
+				UserName:  "Soybean",
+				Password:  pws,
+				UserRoles: []string{roles[0].RoleCode},
+			},
+			{
+				UserName:  "Admin",
+				Password:  pws,
+				UserRoles: []string{roles[1].RoleCode},
+			},
+			{
+				UserName:  "User",
+				Password:  pws,
+				UserRoles: []string{roles[2].RoleCode},
+			},
 		}
 
-		dbUser := db.Create(newUser)
+		dbUser := db.Create(users)
+
+		role := db.Create(&roles)
 
 		if dbUser.Error != nil {
 			log.Error("创建默认用户失败 ", dbUser.Error)
+		}
+
+		if role.Error != nil {
+			log.Error("创建默认角色失败 ", role.Error)
 		}
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		log.Info("初始化数据成功, 创建默认用户成功, 用户名: ", newUser.UserName)
+		for _, user := range users {
+			log.Info("初始化数据成功, 创建默认用户成功, 用户名: ", user.UserName)
+		}
+
 	}
 
 }

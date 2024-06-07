@@ -52,10 +52,11 @@ func GetAllRoles() ([]model.UserRole, error) {
 	return userRoles, nil
 }
 
-func AddRole(roleName, roleCode, status string) (model.UserRole, error) {
+func AddRole(roleName, roleCode, roleDesc, status string) (model.UserRole, error) {
 	var userRole model.UserRole
 	userRole.RoleName = roleName
 	userRole.RoleCode = roleCode
+	userRole.RoleDesc = roleDesc
 	userRole.Status = status
 	query := database.DB.Create(&userRole)
 	if query.Error != nil {
@@ -64,10 +65,11 @@ func AddRole(roleName, roleCode, status string) (model.UserRole, error) {
 	return userRole, nil
 }
 
-func EditRole(id int, roleName, roleCode, status string) (model.UserRole, error) {
+func EditRole(id int, roleName, roleCode, roleDesc, status string) (model.UserRole, error) {
 	var userRole model.UserRole
 	userRole.RoleName = roleName
 	userRole.RoleCode = roleCode
+	userRole.RoleDesc = roleDesc
 	userRole.Status = status
 
 	query := database.DB.Model(&userRole).Where("id = ?", id).Updates(&userRole)
@@ -77,4 +79,13 @@ func EditRole(id int, roleName, roleCode, status string) (model.UserRole, error)
 	}
 
 	return userRole, nil
+}
+
+func RemoveRoles(ids []int) error {
+	query := database.DB.Where("id IN ?", ids).Delete(&model.UserRole{})
+
+	if query.Error != nil {
+		return query.Error
+	}
+	return nil
 }
